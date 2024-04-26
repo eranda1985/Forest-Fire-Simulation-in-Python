@@ -6,19 +6,23 @@ import matplotlib.pyplot as plt
 SC_WIDTH, SC_HEIGHT = 800,800
 MAP_WIDTH, MAP_HEIGHT = 20, 20
 TILE_SIZE = 40
-INITIAL_TREE_DENSITY = 0.99
+INITIAL_TREE_DENSITY = 0.50
 GROW_CHANCE = 0.0
-FIRE_CHANCE = 0.01
+FIRE_CHANCE = 0.001
 FIRE_SPREAD_CHANCE = 0.8
 PAUSE_LENGTH = 0.5
-SIM_LENGTH = 32
+SIM_LENGTH = 100
 FIRES_LIMIT = 15
+FPS = 3
+#fpsClock = pygame.time.Clock()
 
 pygame.init()
 screen = pygame.display.set_mode((SC_WIDTH, SC_HEIGHT))
+pygame.display.set_caption("Forest Fire Simulation")
 
 TREE_IMG = pygame.image.load(os.path.join("Graphics", "Tree_Small.png")).convert_alpha()
 FIRE_IMG = pygame.image.load(os.path.join("Graphics", "Fire_Small.png")).convert_alpha()
+DRONE_IMG = pygame.transform.scale(pygame.image.load(os.path.join("Graphics", "drone.png")).convert_alpha(), (80, 80))
 
 
 trees = []
@@ -27,8 +31,9 @@ fires = []
 def main():
     forest = createNewForest()
     fire_counter = 0
+    drone_start_pos = pygame.Vector2(1,1)
+    dt = 18
 
-    
     for _ in range(SIM_LENGTH):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -48,7 +53,7 @@ def main():
         next_forest = [["Empty" for x in range(MAP_WIDTH)] for y in range(MAP_HEIGHT)]
         
         screen.fill((137,234,123)) #light green
-        displayForest(forest)
+        displayForest(forest, drone_start_pos)
         
         #Build next forest
         for x in range(MAP_WIDTH):
@@ -81,23 +86,26 @@ def main():
                     next_forest[y][x] = forest[y][x]
         
         fire_counter = sum(ii.count("F") for ii in next_forest)
-        print(f"fire counter value: {fire_counter}")
+        print(f"Tree count remaning: {tree_count}")
         forest = next_forest
+        axis = random.choice([0,1])
+        dt = random.choice([dt, -dt])
+        if (drone_start_pos[axis] + dt) >= 0:
+            drone_start_pos[axis] += dt
         
         time.sleep(PAUSE_LENGTH) #Pause while loop for a short time
-        
-        
         pygame.display.update() #Update the screen
+        #fpsClock.tick(FPS) # run the game loop at constant speed.
 
     # Following generates a plot indicating the tree percentage and fire percentage left at the end of steps.
     # Temporarily commented out.
-    fig, ax = plt.subplots()
-    ax.plot(trees, color = 'green', label = 'Trees')
-    ax.plot(fires, color = 'red', label = 'Fire')
-    ax.legend(loc = 'upper right')
-    ax.set_xlabel("Time")
-    ax.set_ylabel("Land Occupied (%)")
-    plt.show()
+    # fig, ax = plt.subplots()
+    # ax.plot(trees, color = 'green', label = 'Trees')
+    # ax.plot(fires, color = 'red', label = 'Fire')
+    # ax.legend(loc = 'upper right')
+    # ax.set_xlabel("Time")
+    # ax.set_ylabel("Land Occupied (%)")
+    # plt.show()
 
 
 #Initialise a Random Map of Trees
@@ -105,13 +113,15 @@ def createNewForest():
     map = [["T" if random.random() <= INITIAL_TREE_DENSITY else " " for x in range(MAP_WIDTH) ] for y in range(MAP_HEIGHT)]
     return map
 
-def displayForest(forest):
+def displayForest(forest, drone_st_pos):
     for x in range(MAP_WIDTH):
        for y in range(MAP_HEIGHT):
             if forest[y][x] == "T":
                 screen.blit(TREE_IMG, (x*TILE_SIZE, y*TILE_SIZE))
             elif forest[y][x] == "F":
                 screen.blit(FIRE_IMG, (x*TILE_SIZE, y*TILE_SIZE))
+    
+    screen.blit(DRONE_IMG, drone_st_pos)
 
 
 if __name__ == '__main__':
